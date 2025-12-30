@@ -1,0 +1,225 @@
+---
+title: "Simulation of an urgent care center queue"
+output: html_document
+---
+
+We assume arrivals form a Poisson process with rate $\lambda>0$, i.i.d. service times are exponential with mean $1/\mu$ ($\mu>0$), arrivals and services are independent.
+
+Conditions for an $M/M/1$ queue holds if:
+
+1.  Arrival times are i.i.d. (exponential($\lambda$)).
+
+2.  Service times are i.i.d. (exponential($\mu$)).
+
+3.  One number of services.
+
+Here we are given a system with arrivals determined by a Poisson process, which says that the arrival of next person is given by an exponential distribution. Hence arrivals are independent and memoryless. The time of service is exponentially distributed and therefore also independent and memoryless, and independent of arrivals. The last point is valid since we have exactly one service. Hence, this system is an $M/M/1$ queue.
+
+------------------------------------------------------------------------
+
+Let $X(t)\in\{0,1,2,\dots\}$ be the stochastic process representing number of patients in the UCC (in service + in queue) at time $t$.
+
+-   **State changes**:\
+    From state $n$, a new arrival increases the state to $n+1$ (birth), a service completion (if $n\ge1$) decreases the state to $n-1$ (death). Because arrivals are Poisson and service times are exponential, the process has the Markov property and is a continuous-time birth–death chain.
+
+-   **Rates:** $$
+    \lambda_n = \lambda \quad \text{for all } n \ge 0, \qquad
+    \mu_n =
+    \begin{cases}
+    0, & n=0,\\
+    \mu, & n\ge 1~.
+    \end{cases}
+    $$
+
+------------------------------------------------------------------------
+
+Let $W$ be the total time in system (waiting + service).\
+For this $M/M/1$ queue $\rho=\lambda/\mu<1$ and we have a stable process, and Little's law is valid:
+
+$$
+L = \lambda W \rightarrow W = L/\lambda
+$$
+
+where $W$ is the average waiting time and $L$ is the average
+
+$$
+L = \mathbb{E}[X] = \frac{\rho}{1 - \rho} = \frac{\lambda}{\mu - \lambda}.
+$$
+
+This finally gives us an expression for $W$\
+$$
+W = \frac{L}{\lambda} = \frac{1}{\mu - \lambda}.
+$$
+
+```{r}
+source("Funksjoner.R")
+
+lambda = 5
+mu = 6
+
+exp_time_in_queue_list = c()
+
+for (i in 1:30){
+  sim = UCC(lambda,mu)
+  exp_time_in_queue_list = c(exp_time_in_queue_list,sim$expected_time_in_queue)
+}
+t_list = sim$t_list
+queue_list = sim$queue_list
+
+CI_waiting_time = CI(exp_time_in_queue_list,0.95)
+```
+
+```{r echo = FALSE}
+cat("95 CI for time in system: [", CI_waiting_time[1], "," , CI_waiting_time[2], "]\n")
+
+index = 1
+while(TRUE){
+  if (t_list[index] >= 12){
+    break
+  } else {
+    index = index + 1
+  }
+}
+
+plot(t_list[1:index],queue_list[1:index],type = "s",xlab="Hour",ylab="Pasients in system",col="red",lwd=3,main="UCC")
+```
+
+If we insert $\lambda = 5$ and $\mu = 6$ into the expressions we deduced in task e we find that the expected waiting time $W$ for the pasients is equal to 1 hour. This coincides very well with the CI given from the simulation. The CI is given in hours.
+
+We found the expected amount of people in the queue by summing up all the different states the system visits, weigthed by the time spent in that state, and then divided this sum by the total time. After we used Little's law to obtain the expected waiting time.
+
+Conditions for an $M/M/1$ queue is:
+
+1.  Arrival times are i.i.d. (exponential($\lambda$)).
+
+2.  Service times are i.i.d. (exponential($\mu$)).
+
+3.  One number of servers.
+
+$U(t)$ is the number of urgent patients in the UCC. We are assuming that the patients arrive as a poisson process with rate $\lambda$. The classification between urgent and normal patients makes the arrivals of the urgent patients a poisson process with rate $p \lambda$. This has an arrival time that is expontially distributed with rate $p \lambda$. As for the previous task, we also have that the service time is still independent and memoryless. The last condition also holds, as we are assuming only ones server.
+
+## Arrival rate
+
+The rate of urgent arrivals will depend on how many total arrivals we have. This will be a binomial distribution:
+
+$$
+Pr(U(t) = k | X(t) = n) = {n\choose{k}} p^k (1-p)^{n-k}
+$$ We can use the law of total probability and write:
+
+$$
+Pr(U(t) = k) = {\sum Pr(U(t) = k \ |\ X(t) = n) \cdot Pr(X(t) = n)}
+$$ Since the number of total arrivals is a poisson process we can write this as:
+
+$$
+Pr(U(t) = k) =  \sum {n\choose{k}} p^k (1-p)^{n-k} \cdot \frac{(\lambda t)^n}{n!} e^{-\lambda t}
+$$ we can write this out and introduce $m = n-k$:
+
+$$
+Pr(U(t) = k) =  \sum \frac{1}{k!m!} p^k (1-p)^{m} \cdot (\lambda t)^{m+k} e^{-\lambda t}
+$$
+
+by rearranging the terms we get:
+
+$$
+Pr(U(t) = k) =  \frac{p^k}{k!} (\lambda t)^k e^{- \lambda t} \sum \frac{[(1-p)(\lambda t)]^m}{m!}
+$$ $$
+Pr(U(t) = k) = \frac{p^k}{k!} (\lambda t)^k e^{- \lambda t} \cdot e^{(1-p){\lambda t}}
+$$ We can combine the exponentials and achieve:
+
+$$
+Pr(U(t) = k) = \frac{p \lambda t}{k!} \cdot e^{-p \lambda t}
+$$ Which is the probability function of a Poisson random variable with parameter $p \lambda t$, so we have that the arrival time of the urgent patients is also a poisson process with rate $p \lambda$
+
+## The long run mean number of urgent patients
+
+Since this process is also a poisson process, we can use the already deduced formula:
+
+$$
+L = \mathbb{E}[X] = \frac{\rho}{1 - \rho} = \frac{\lambda}{\mu - \lambda}.
+$$ if we then plug in we achieve:
+
+$$
+L = \mathbb{E}[U] = \frac{p \lambda}{\mu - p\lambda}
+$$
+
+The reason why {$N(t):t\geq0$} does not behave as a $M/M/1$ queue is that the service time is simply not i.i.d. In case we have $U(t)=0$ we have that $N(t)$ service time is exponential distributed and therefore i.i.d. When $U(t)\neq 0$ the service time of $N(t)$ is trivial not distributed the same, and therefore not identical.
+
+If we make the assumption that when a service is distributed it continues from same point afterwards, we have the following relations for the long run mean of patients:
+
+$$
+E[X(t)] = E[U(t)] + E[N(U)]
+$$
+
+since the arrival follow the same poisson distribution, and the service follows the same exponential distribution.
+
+$$
+E[N(t)] = E[X(t)] - E[U(t)] = \frac{\lambda}{\mu - \lambda} - \frac{p\lambda}{\mu - p\lambda} = \frac{\mu \lambda (1-p)}{(\mu - \lambda)(\mu - p \lambda)}
+$$
+
+Little's law states
+
+$$
+L = \lambda W \rightarrow W = L/\lambda
+$$
+
+For $U(t)$ we have rate $\lambda_N = p\lambda$ which results in
+
+$$
+W_U = \frac{p\lambda}{\mu - p\lambda}/\lambda_N = \frac{1}{\mu - p\lambda}. 
+$$
+
+For $N(t)$ the rate is $\lambda_N = (1-p)\lambda$ and therefore
+
+$$
+W_N = \frac{\mu \lambda (1-p)}{(\mu - \lambda)(\mu - p \lambda)}\frac{1}{\lambda_N} = \frac{\mu}{(\mu - \lambda)(\mu - p \lambda)}  
+$$ 
+
+
+```{r}
+source("Funksjoner.R")
+
+lambda = 5
+mu = 6
+p = 0.8
+
+exp_time_u_list = c()
+exp_time_n_list = c()
+
+for (i in 1:30){
+  sim = UCC_priority(lambda,mu,p)
+  exp_time_u_list = c(exp_time_u_list,sim$expected_w_u)
+  exp_time_n_list = c(exp_time_n_list,sim$expected_w_n)
+}
+t_list = sim$t_list
+urgent_list = sim$u_in_queue_list
+normal_list = sim$n_in_queue_list
+
+CI_waiting_time_u = CI(exp_time_u_list,0.95)
+CI_waiting_time_n = CI(exp_time_n_list,0.95)
+
+```
+
+```{r echo = FALSE}
+cat("95 CI for expected time for urgent pasients in UCC: [", CI_waiting_time_u[1], "," , CI_waiting_time_u[2], "]\n")
+
+cat("95 CI for expected time for normal pasients in UCC: [", CI_waiting_time_n[1], "," , CI_waiting_time_n[2], "]\n")
+
+cat()
+
+index = 1
+while(TRUE){
+  if (t_list[index] >= 12){
+    break
+  } else {
+    index = index + 1
+  }
+}
+
+plot(t_list[1:index],urgent_list[1:index],type = "s",xlab="Hour",ylab="Pasients in system",col="red",lwd=3,main="UCC priority")
+lines(t_list[1:index],normal_list[1:index],col="blue",type = "s",lwd=3)
+legend("topright",legend= c("Urgent pasient","Normal pasient"),col=c("red","blue"),bty="n",lwd=3,cex=0.7)
+```
+
+If we insert $\lambda = 5$ and $\mu = 6$ into the expressions we deduced in task e we find that the expected waiting time $W_U$ for urgent pasients is equal to 30 minutes, and the expected waiting time $W_N$ for normal pasients is equal to 3 hours. This coincides very well with the CIs given from the simulation. The CIs is given in hours.
+
+Again we found the expected amount of people in the queue by summing up all the different states the system visits, weigthed by the time spent in that state, and then divided this sum by the total time. After we used Little's law to obtain the expected waiting time.

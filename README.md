@@ -1,5 +1,9 @@
 # Urgent-Care-Queue-Simulation
 
+View the entire project:
+
+https://adrianlund2003.github.io/Urgent-Care-Queue-Simulation/Besvarelse
+
 In this project, we simulate a waiting line at an urgent care center (UCC) staffed by a single doctor who can treat only one patient at a time.
 
 There are two types of patients: normal and urgent. Urgent patients have priority over normal patients. This means that urgent patients are always served before normal patients.
